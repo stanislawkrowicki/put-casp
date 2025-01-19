@@ -5,13 +5,21 @@
 
 #define MAX_MESSAGE_SIZE 1024
 
+#define P_SYSTEM_QUEUE_ID 1
+#define C_SYSTEM_QUEUE_ID 2
+
+/*
+    ID of the dispatcher for use with system_type
+*/
+#define DISPATCHER_ID 0
+
 /*
     Producer -> Dispatcher message types
 */
 enum EProd2DispSystemMessageType
 {
-    LOGIN,
-    REGISTER_MESSAGE
+    PROD2DISP_LOGIN,
+    PROD2DISP_REGISTER_MESSAGE
 };
 
 /*
@@ -19,8 +27,8 @@ enum EProd2DispSystemMessageType
 */
 enum EDisp2ProdSystemMessageType
 {
-    LOGIN_OK,
-    LOGIN_FAILED
+    DISP2PROD_LOGIN_OK,
+    DISP2PROD_LOGIN_FAILED
 };
 
 /*
@@ -28,10 +36,10 @@ enum EDisp2ProdSystemMessageType
 */
 enum ECli2DispSystemMessageType
 {
-    LOGIN,
-    FETCH,
-    SUBSCRIBE,
-    UNSUBSCRIBE
+    CLI2DISP_LOGIN,
+    CLI2DISP_FETCH,
+    CLI2DISP_SUBSCRIBE,
+    CLI2DISP_UNSUBSCRIBE
 };
 
 /*
@@ -39,10 +47,10 @@ enum ECli2DispSystemMessageType
 */
 enum EDisp2CliSystemMessageType
 {
-    LOGIN_OK,
-    LOGIN_FAILED,
-    AVAILABLE_TYPES,
-    NEW_TYPE
+    DISP2CLI_LOGIN_OK,
+    DISP2CLI_LOGIN_FAILED,
+    DISP2CLI_AVAILABLE_TYPES,
+    DISP2_CLI_NEW_TYPE
 };
 
 /*
