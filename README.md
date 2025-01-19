@@ -3,6 +3,11 @@ Repozytorium projektu z przedmiotu Programowanie Systemowe i Współbieżne @PUT
 
 ![Application Architecture](./docs/architecture.svg)
 
+### Konwencja wiadomości systemowych
+Wiadomości systemowe i zwykłe są wysyłane w odmienny sposób.
+Z racji, że używamy jedną kolejkę, a potrzebujemy mieć możliwość przekazania danych z dyspozytora tylko do wybranego klienta/producenta, to `TYPE` wiadomości scala dwie wartości po 2 bajty każda - ID odbiorcy do którego ma dotrzeć wiadomość i typ komunikatu.
+Także, gdy `TYPE = 0xAAAAFFFF`, to `0xAAAA` jest ID odbiorcy, a `0xFFFF` to typ komunikatu.
+
 ### Wiadomości systemowe producenta 
 ```
 LOGIN(ID, TYPE) - loguje się do dyspozytora podając swoje ID i typ powiadomień które będzie wysyłał.
