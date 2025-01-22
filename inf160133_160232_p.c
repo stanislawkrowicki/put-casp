@@ -14,11 +14,13 @@ int main()
 
     struct system_message msg;
 
-    msg.mtype = get_system_type(DISPATCHER_ID, 0xAAAA);
+    msg.mtype = get_system_type(DISPATCHER_ID, PROD2DISP_LOGIN);
 
-    char text[] = "Hello!";
+    // char text[] = "Hello!";
 
-    strcpy(msg.payload.text, text);
+    msg.payload.numbers[0] = 4;   // Producer ID
+    msg.payload.numbers[1] = 420; // Type to listen to
+
     printf("Message ID: %ld\n", msg.mtype);
 
     if (msgsnd(queue, &msg, sizeof(msg.payload), 0) == -1)

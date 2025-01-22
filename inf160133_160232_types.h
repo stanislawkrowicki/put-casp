@@ -4,6 +4,10 @@
 #include <stdint.h>
 
 #define MAX_MESSAGE_SIZE 1024
+/*
+    Maximum producer/client ID
+*/
+#define MAX_ID 30
 
 extern const uint16_t P_SYSTEM_QUEUE_ID;
 extern const uint16_t C_SYSTEM_QUEUE_ID;
@@ -23,8 +27,8 @@ extern const uint32_t MAX_TYPE;
 */
 enum EProd2DispSystemMessageType
 {
-    PROD2DISP_LOGIN,
-    PROD2DISP_REGISTER_MESSAGE
+    PROD2DISP_LOGIN = 1,
+    PROD2DISP_REGISTER_MESSAGE = 2
 };
 
 /*
@@ -32,8 +36,8 @@ enum EProd2DispSystemMessageType
 */
 enum EDisp2ProdSystemMessageType
 {
-    DISP2PROD_LOGIN_OK,
-    DISP2PROD_LOGIN_FAILED
+    DISP2PROD_LOGIN_OK = 1,
+    DISP2PROD_LOGIN_FAILED = 2
 };
 
 /*
@@ -41,10 +45,10 @@ enum EDisp2ProdSystemMessageType
 */
 enum ECli2DispSystemMessageType
 {
-    CLI2DISP_LOGIN,
-    CLI2DISP_FETCH,
-    CLI2DISP_SUBSCRIBE,
-    CLI2DISP_UNSUBSCRIBE
+    CLI2DISP_LOGIN = 1,
+    CLI2DISP_FETCH = 2,
+    CLI2DISP_SUBSCRIBE = 3,
+    CLI2DISP_UNSUBSCRIBE = 4
 };
 
 /*
@@ -52,10 +56,10 @@ enum ECli2DispSystemMessageType
 */
 enum EDisp2CliSystemMessageType
 {
-    DISP2CLI_LOGIN_OK,
-    DISP2CLI_LOGIN_FAILED,
-    DISP2CLI_AVAILABLE_TYPES,
-    DISP2_CLI_NEW_TYPE
+    DISP2CLI_LOGIN_OK = 1,
+    DISP2CLI_LOGIN_FAILED = 2,
+    DISP2CLI_AVAILABLE_TYPES = 3,
+    DISP2_CLI_NEW_TYPE = 4
 };
 
 /*
@@ -87,7 +91,8 @@ struct system_message
     union
     {
         char text[MAX_MESSAGE_SIZE];
-        uint16_t numbers[MAX_MESSAGE_SIZE / sizeof(uint16_t)];
+        unsigned int number;
+        uint32_t numbers[MAX_MESSAGE_SIZE / sizeof(uint32_t)];
     } payload;
 };
 
