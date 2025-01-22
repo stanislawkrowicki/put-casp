@@ -11,8 +11,6 @@ Także, gdy `TYPE = 0xAAAA0000FFFF`, to `0xAAAA` jest ID odbiorcy, a `0x0000FFFF
 ### Wiadomości systemowe producenta 
 ```
 LOGIN(ID, TYPE) - loguje się do dyspozytora podając swoje ID i typ powiadomień które będzie wysyłał.
-
-REGISTER_MESSAGE(TYPE) - oznajmia dyspozytorowi, że od teraz będzie wysyłał dodatkowo również eventy TYPE.
 ```
 
 ### Wiadomości systemowe dyspozytora do producenta
