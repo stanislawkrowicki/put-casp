@@ -44,6 +44,16 @@ AVAILABLE_TYPES(TYPE[]) - aktualnie zarejestrowane typy powiadomień
 NEW_TYPE(TYPE) - nowy typ zarejestrowany przez producentów
 ```
 
-### Kompilowanie kodu z flagą DEBUG
+### Kompilacja kodu
 ```
-gcc -DDEBUG inf160133_160232_[dpc].c inf160133_160232_types.c -o [dpc].out
+make
+make client
+make producer
+make dispatcher
+```
+
+### Kompilacja kodu z flagą DEBUG
+To samo co normalnie, ale z dodanym `DEBUG=1`
+```
+make client DEBUG=1
+```
