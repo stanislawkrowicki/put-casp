@@ -44,7 +44,9 @@ void wait_for_messages(int producer_system_queue, int client_system_queue)
         msg_size = msgrcv(producer_system_queue, &msg, sizeof(msg.payload), for_dispatcher_type_range, IPC_NOWAIT);
         if (msg_size != -1)
         {
+#ifdef DEBUG
             printf("Received message on producer system queue!\n");
+#endif
             received = 1;
         }
         else if (errno != ENOMSG)
@@ -55,7 +57,9 @@ void wait_for_messages(int producer_system_queue, int client_system_queue)
         msg_size = msgrcv(client_system_queue, &msg, sizeof(msg.payload), for_dispatcher_type_range, IPC_NOWAIT);
         if (msg_size != -1)
         {
+#ifdef DEBUG
             printf("Received message on client system queue!\n");
+#endif
             received = 1;
         }
         else if (errno != ENOMSG)
