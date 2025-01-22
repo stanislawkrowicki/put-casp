@@ -35,7 +35,7 @@ void wait_for_messages(int producer_system_queue, int client_system_queue)
 
     // Get all messages with type lower or equal to DISPATCHER_ID, so destined to dispatcher
     // Conversion to long is necessary because of unexpected behavior when negating uint32_t
-    long for_dispatcher_type_range = -(long)get_system_type(DISPATCHER_ID, 0xFFFF);
+    long for_dispatcher_type_range = -get_system_type(DISPATCHER_ID, MAX_TYPE);
 
     while (1)
     {

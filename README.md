@@ -5,8 +5,8 @@ Repozytorium projektu z przedmiotu Programowanie Systemowe i Współbieżne @PUT
 
 ### Konwencja wiadomości systemowych
 Wiadomości systemowe i zwykłe są wysyłane w odmienny sposób.
-Z racji, że używamy jedną kolejkę, a potrzebujemy mieć możliwość przekazania danych z dyspozytora tylko do wybranego klienta/producenta, to `TYPE` wiadomości scala dwie wartości po 2 bajty każda - ID odbiorcy do którego ma dotrzeć wiadomość i typ komunikatu.
-Także, gdy `TYPE = 0xAAAAFFFF`, to `0xAAAA` jest ID odbiorcy, a `0xFFFF` to typ komunikatu.
+Z racji, że używamy jedną kolejkę, a potrzebujemy mieć możliwość przekazania danych z dyspozytora tylko do wybranego klienta/producenta, to `TYPE` wiadomości scala dwie wartości - ID odbiorcy (2 bajty) do którego ma dotrzeć wiadomość i typ komunikatu (4 bajty).
+Także, gdy `TYPE = 0xAAAA0000FFFF`, to `0xAAAA` jest ID odbiorcy, a `0x0000FFFF` to typ komunikatu.
 
 ### Wiadomości systemowe producenta 
 ```

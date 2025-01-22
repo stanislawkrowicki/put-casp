@@ -5,13 +5,18 @@
 
 #define MAX_MESSAGE_SIZE 1024
 
-#define P_SYSTEM_QUEUE_ID 1
-#define C_SYSTEM_QUEUE_ID 2
+extern const uint16_t P_SYSTEM_QUEUE_ID;
+extern const uint16_t C_SYSTEM_QUEUE_ID;
 
 /*
     ID of the dispatcher for use with system_type
 */
-#define DISPATCHER_ID 0
+extern const uint16_t DISPATCHER_ID;
+
+/*
+    Maximum value for message type
+*/
+extern const uint32_t MAX_TYPE;
 
 /*
     Producer -> Dispatcher message types
@@ -56,12 +61,12 @@ enum EDisp2CliSystemMessageType
 /*
     Dispatcher -> Producer/Client identification type
 */
-#define system_type uint32_t
+#define system_type int64_t
 
 /*
     Function to create a system_type from id and type
 */
-system_type get_system_type(uint16_t id, uint16_t type);
+system_type get_system_type(uint16_t id, uint32_t type);
 
 /*
     Function to get target ID from a system_type
@@ -71,7 +76,7 @@ uint16_t get_id(system_type st);
 /*
     Function to get message type from a system_type
 */
-uint16_t get_type(system_type st);
+uint32_t get_type(system_type st);
 
 /*
     System message structure
