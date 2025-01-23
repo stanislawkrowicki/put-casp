@@ -47,7 +47,7 @@ void handle_producer_login(struct system_message msg,int producer_system_queue)
     {
         printf("ERROR: PRODUCER %d TRIED TO REGISTER INVALID TYPE: %d\n", producer_id, type);
         response.mtype = login_failed_type;
-        msgsnd(P_SYSTEM_QUEUE_ID, &response, sizeof(response.payload.number), 0);
+        msgsnd(producer_system_queue, &response, sizeof(response.payload.number), 0);
         return;
     }
 
@@ -68,7 +68,7 @@ void handle_producer_login(struct system_message msg,int producer_system_queue)
 #endif
     }
 
-    msgsnd(P_SYSTEM_QUEUE_ID, &response, sizeof(response.payload.number), 0)
+    msgsnd(producer_system_queue, &response, sizeof(response.payload.number), 0);
 }
 
 void handle_producer_system_message(struct system_message msg,int producer_system_queue)
