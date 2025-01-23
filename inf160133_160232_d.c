@@ -21,7 +21,7 @@ int initialize_producer_system_queue()
     return msgget(P_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
 }
 
-void handle_producer_login(struct system_message msg)
+void handle_producer_login(struct system_message msg,int producer_system_queue)
 {
 #ifdef DEBUG
     printf("Got LOGIN event from producer\n");
@@ -68,10 +68,10 @@ void handle_producer_login(struct system_message msg)
 #endif
     }
 
-    msgsnd(P_SYSTEM_QUEUE_ID, &response, sizeof(response.payload.number), 0);
+    msgsnd(P_SYSTEM_QUEUE_ID, &response, sizeof(response.payload.number), 0)
 }
 
-void handle_producer_system_message(struct system_message msg)
+void handle_producer_system_message(struct system_message msg,int producer_system_queue)
 {
     uint16_t producer_id = get_id(msg.mtype);
     uint32_t mtype = get_type(msg.mtype);
@@ -79,14 +79,14 @@ void handle_producer_system_message(struct system_message msg)
     switch (mtype)
     {
     case PROD2DISP_LOGIN:
-        handle_producer_login(msg);
+        handle_producer_login(msg,producer_system_queue);
         break;
     default:
         printf("Unknown system message type from ID: %d: %d", producer_id, mtype);
     }
 }
 
-void handle_client_login(struct system_message msg)
+void handle_client_login(struct system_message msg,int client_system_queue)
 {
 #ifdef DEBUG
     printf("Got LOGIN event from client\n");
@@ -125,10 +125,16 @@ void handle_client_login(struct system_message msg)
 #endif
     }
 
-    msgsnd(C_SYSTEM_QUEUE_ID, &response, sizeof(response.payload.number), 0);
+    if(msgsnd(client_system_queue, &response, sizeof(response.payload.number), 0)==-1){
+        printf("Response failed\n");
+    }
+    else{
+        printf("Response sent\n");
+    }
+    
 }
 
-void handle_client_system_notification_request(struct system_message msg){
+void handle_client_system_notification_request(struct system_message msg, int client_system_queue){
     #ifdef DEBUG
     printf("Got REQUEST event from client\n");
     #endif
@@ -142,7 +148,7 @@ void handle_client_system_notification_request(struct system_message msg){
 #endif
 }
 
-void handle_client_system_message(struct system_message msg)
+void handle_client_system_message(struct system_message msg,int client_system_queue)
 {
     uint16_t client_id = get_id(msg.mtype);
     uint32_t mtype = get_type(msg.mtype);
@@ -150,10 +156,10 @@ void handle_client_system_message(struct system_message msg)
     switch (mtype)
     {
     case CLI2DISP_LOGIN:
-        handle_client_login(msg);
+        handle_client_login(msg,client_system_queue);
         break;
     case CLI2DISP_SUBSCRIBE:
-        handle_client_system_notification_request(msg);
+        handle_client_system_notification_request(msg,client_system_queue);
         break;
     default:
         printf("Unknown system message type from ID: %d: %d",client_id , mtype);
@@ -179,7 +185,7 @@ void wait_for_messages(int producer_system_queue, int client_system_queue)
 #ifdef DEBUG
             printf("Received message on producer system queue!\n");
 #endif
-            handle_producer_system_message(msg);
+            handle_producer_system_message(msg,producer_system_queue);
             received = 1;
         }
         else if (errno != ENOMSG)
@@ -193,7 +199,7 @@ void wait_for_messages(int producer_system_queue, int client_system_queue)
 #ifdef DEBUG
             printf("Received message on client system queue!\n");
 #endif
-            handle_client_system_message(msg);
+            handle_client_system_message(msg, client_system_queue);
             received = 1;
         }
         else if (errno != ENOMSG)
