@@ -143,10 +143,10 @@ void handle_client_fetch(struct system_message msg, int client_system_queue){
     struct system_message fetch_response;
     int client_id = msg.payload.number;
     fetch_response.mtype = get_system_type(client_id, DISP2CLI_AVAILABLE_TYPES);
-    fetch_response.payload.numbers[0] = 10;
+    // fetch_response.payload.numbers[0] = 10;
 
     for (size_t i = 0; i < 10; i++) {
-        fetch_response.payload.numbers[i + 1] = AVAILABLE_NOTIFICATION[i];
+        fetch_response.payload.numbers[i] = AVAILABLE_NOTIFICATION[i];
     }
 
     if(msgsnd(client_system_queue,&fetch_response,sizeof(fetch_response.payload),0)==-1){\

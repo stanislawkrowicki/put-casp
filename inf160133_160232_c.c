@@ -94,10 +94,9 @@ int main(int argc, char *argv[])
     msg_size = msgrcv(queue, &fetch_response, sizeof(fetch_response.payload), fetch_response_type, IPC_NOWAIT);
         if (msg_size != -1)
         {
-            printf("Got here\n");
-            for(int i=1;i<11;i++){
+            for(int i=0;i<10;i++){
                 if(fetch_response.payload.numbers[i]==1){
-                    printf("Type %d available",i);
+                    printf("Type %d available\n",i);
                 }
             }
             break;
@@ -108,32 +107,41 @@ int main(int argc, char *argv[])
         }
     }
     //Choosing notification type
-    // printf("What types do you want to receive:(for now only choose one)\n 1 - ALERT RCB\n 2 - WEATHER NOTIFICATION\n 3 - POLITICAL NEWS \n");
-    // int not_type, t;
-    // scanf("%d",&t);
-    // while(t<=0||t>3){
-    //     printf("Incorrect type of message required\n Try again\n");
-    //     scanf("%d",&t);
-    // }
-    // not_type = t;
+    int notification_type, t;
+    scanf("%d",&t);
+    int available;
+    if(fetch_response.payload.numbers[t]==1){
+        available=1;
+    }
+    else{
+        available=0;
+    }
+    while(t<=0||t>10||available==0){
+        printf("Incorrect type of message required\n Try again\n");
+        scanf("%d",&t);
+        if(fetch_response.payload.numbers[t]==1){
+        available=1;
+    }
+    }
+    notification_type = t;
 
-    // //Notification request
-    // struct system_message msg2;
+    //Notification request
+    struct system_message msg2;
 
-    // msg2.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_SUBSCRIBE);
+    msg2.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_SUBSCRIBE);
 
-    // msg2.payload.numbers[0] = client_id;
-    // msg2.payload.numbers[1] = not_type;
-    // printf("You want to receive: %ld\n", msg2.mtype);
-    // if (msgsnd(queue, &msg2, sizeof(msg2.payload), 0) == -1)
-    // {
-    //     perror("msgsnd error");
-    //     exit(1);
-    // }
-    // else
-    // {
-    //     printf("Message sent!\n");
-    // }
+    msg2.payload.numbers[0] = client_id;
+    msg2.payload.numbers[1] = notification_type;
+    printf("You want to receive: %d\n", notification_type);
+    if (msgsnd(queue, &msg2, sizeof(msg2.payload), 0) == -1)
+    {
+        perror("msgsnd error");
+        exit(1);
+    }
+    else
+    {
+        printf("Message sent!\n");
+    }
 
     return 0;
 }
