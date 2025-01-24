@@ -14,6 +14,7 @@ extern const uint16_t P_SYSTEM_QUEUE_ID;
 extern const uint16_t C_SYSTEM_QUEUE_ID;
 extern const uint16_t P_NOTIFICATION_QUEUE_ID;
 extern const uint16_t C_NOTIFICATION_QUEUE_ID;
+extern const int SUBSCRIPTIONS_SHM_KEY;
 
 /*
     ID of the dispatcher for use with system_type
