@@ -6,6 +6,8 @@ endif
 
 TYPESFILE = inf160133_160232_types.c
 
+all: producer client dispatcher
+
 producer:
 	gcc $(CFLAGS) inf160133_160232_p.c $(TYPESFILE) -o p.out
 
