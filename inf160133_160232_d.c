@@ -12,16 +12,6 @@ uint16_t CONNECTED_PRODUCERS[MAX_ID + 1];          // type of messages sent if p
 uint16_t CONNECTED_CLIENTS[MAX_ID + 1];            // 1 if client connected, 0 otherwise
 int AVAILABLE_NOTIFICATIONS[MAX_NOTIFICATION + 1]; // 0 if type not available 1 if available
 
-int initialize_client_system_queue()
-{
-    return msgget(C_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
-}
-
-int initialize_producer_system_queue()
-{
-    return msgget(P_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
-}
-
 void get_available_notifications(uint32_t *types, int *len)
 {
     int curr = 0;
@@ -213,13 +203,12 @@ void handle_client_system_message(struct system_message msg, int client_system_q
     }
 }
 
-void wait_for_messages(int producer_system_queue, int client_system_queue)
+void wait_for_system_messages(int producer_system_queue, int client_system_queue)
 {
     ssize_t msg_size;
     struct system_message msg;
 
-    // Get all messages with type lower or equal to DISPATCHER_ID, so destined to dispatcher
-    // Conversion to long is necessary because of unexpected behavior when negating uint32_t
+    // Get all messages destined for dispatcher
     long for_dispatcher_type_range = -get_system_type(DISPATCHER_ID, MAX_TYPE);
 
     while (1)
@@ -259,10 +248,30 @@ void wait_for_messages(int producer_system_queue, int client_system_queue)
     }
 }
 
+void wait_for_notifications(int producer_queue, int client_queue)
+{
+    // ssize_t msg_size;
+    struct system_message msg;
+
+    printf("Listening!\n");
+    while (1)
+    {
+        msgrcv(producer_queue, &msg, sizeof(msg.payload), 0, 0);
+
+        if (errno)
+            printf("Error while waiting for notifications");
+
+        printf("Got message of type %ld with content %s\n", msg.mtype, msg.payload.text);
+    }
+}
+
 int main()
 {
-    int client_system_queue = initialize_client_system_queue();
-    int producer_system_queue = initialize_producer_system_queue();
+    int client_system_queue = msgget(C_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
+    int producer_system_queue = msgget(P_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
+
+    int producer_message_queue = msgget(P_NOTIFICATION_QUEUE_ID, 0600 | IPC_CREAT);
+    int client_message_queue = msgget(C_NOTIFICATION_QUEUE_ID, 0600 | IPC_CREAT);
 
     if (client_system_queue == -1 || producer_system_queue == -1)
     {
@@ -283,5 +292,8 @@ int main()
         AVAILABLE_NOTIFICATIONS[i] = 0;
     }
 
-    wait_for_messages(producer_system_queue, client_system_queue);
+    if (fork() == 0)
+        wait_for_notifications(producer_message_queue, client_message_queue);
+    else
+        wait_for_system_messages(producer_system_queue, client_system_queue);
 }

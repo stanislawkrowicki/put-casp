@@ -13,9 +13,42 @@ int G_queue;
 int G_id;
 int G_producing_type;
 
+void produce_messages()
+{
+    int message_queue = msgget(P_NOTIFICATION_QUEUE_ID, 0600 | IPC_CREAT);
+
+    char text[MAX_MESSAGE_SIZE];
+
+    while (1)
+    {
+        printf("Podaj treść wiadomości lub EXIT by wyjść: ");
+        scanf("%s", text);
+
+        if (strcmp(text, "EXIT") == 0)
+        {
+            exit(1);
+        }
+
+        struct system_message msg;
+        msg.mtype = get_system_type(G_id, G_producing_type);
+        strcpy(msg.payload.text, text);
+
+        if (msgsnd(message_queue, &msg, sizeof(msg.payload), 0) == -1)
+        {
+            perror("Error while sending notification");
+            exit(1);
+        }
+        else
+        {
+            printf("Notification sent!\n");
+        }
+    }
+}
+
 void login_ok()
 {
-    printf("Login accepted~\n");
+    printf("Login accepted\n");
+    produce_messages();
 }
 
 void login_failed()
