@@ -8,9 +8,9 @@
 
 #include "inf160133_160232_types.h"
 
-uint16_t CONNECTED_PRODUCERS[MAX_ID + 1];
-uint16_t CONNECTED_CLIENTS[MAX_ID + 1];
-int AVAILABLE_NOTIFICATION[10] = {0,0,1,0,0,1,0,0,0,0};//0 if type not available 1 if available
+uint16_t CONNECTED_PRODUCERS[MAX_ID + 1];          // type of messages sent if producer connected, 0 otherwise
+uint16_t CONNECTED_CLIENTS[MAX_ID + 1];            // 1 if client connected, 0 otherwise
+int AVAILABLE_NOTIFICATIONS[MAX_NOTIFICATION + 1]; // 0 if type not available 1 if available
 
 int initialize_client_system_queue()
 {
@@ -22,7 +22,23 @@ int initialize_producer_system_queue()
     return msgget(P_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
 }
 
-void handle_producer_login(struct system_message msg,int producer_system_queue)
+void get_available_notifications(uint32_t *types, int *len)
+{
+    int curr = 0;
+
+    for (int i = 0; i <= MAX_ID; ++i)
+    {
+        if (CONNECTED_PRODUCERS[i] > 0)
+        {
+            types[curr] = CONNECTED_PRODUCERS[i];
+            curr++;
+        }
+    }
+
+    *len = curr + 1;
+}
+
+void handle_producer_login(struct system_message msg, int producer_system_queue)
 {
 #ifdef DEBUG
     printf("Got LOGIN event from producer\n");
@@ -62,6 +78,7 @@ void handle_producer_login(struct system_message msg,int producer_system_queue)
     else
     {
         CONNECTED_PRODUCERS[producer_id] = type;
+        AVAILABLE_NOTIFICATIONS[type] = 1;
 
         response.mtype = login_ok_type;
 #ifdef DEBUG
@@ -72,7 +89,7 @@ void handle_producer_login(struct system_message msg,int producer_system_queue)
     msgsnd(producer_system_queue, &response, sizeof(response.payload.number), 0);
 }
 
-void handle_producer_system_message(struct system_message msg,int producer_system_queue)
+void handle_producer_system_message(struct system_message msg, int producer_system_queue)
 {
     uint16_t producer_id = get_id(msg.mtype);
     uint32_t mtype = get_type(msg.mtype);
@@ -80,14 +97,14 @@ void handle_producer_system_message(struct system_message msg,int producer_syste
     switch (mtype)
     {
     case PROD2DISP_LOGIN:
-        handle_producer_login(msg,producer_system_queue);
+        handle_producer_login(msg, producer_system_queue);
         break;
     default:
         printf("Unknown system message type from ID: %d: %d", producer_id, mtype);
     }
 }
 
-void handle_client_login(struct system_message msg,int client_system_queue)
+void handle_client_login(struct system_message msg, int client_system_queue)
 {
 #ifdef DEBUG
     printf("Got LOGIN event from client\n");
@@ -107,7 +124,6 @@ void handle_client_login(struct system_message msg,int client_system_queue)
     system_type login_ok_type = get_system_type(client_id, DISP2CLI_LOGIN_OK);
     system_type login_failed_type = get_system_type(client_id, DISP2CLI_LOGIN_FAILED);
 
-
     if (CONNECTED_CLIENTS[client_id] != 0)
     {
         response.mtype = login_failed_type;
@@ -118,7 +134,7 @@ void handle_client_login(struct system_message msg,int client_system_queue)
     }
     else
     {
-        CONNECTED_CLIENTS[client_id] = 1;       //1 for client id taken
+        CONNECTED_CLIENTS[client_id] = 1; // 1 for client id taken
 
         response.mtype = login_ok_type;
 #ifdef DEBUG
@@ -126,52 +142,57 @@ void handle_client_login(struct system_message msg,int client_system_queue)
 #endif
     }
 
-    if(msgsnd(client_system_queue, &response, sizeof(response.payload.number), 0)==-1){
+    if (msgsnd(client_system_queue, &response, sizeof(response.payload.number), 0) == -1)
+    {
         printf("Response failed\n");
     }
-    else{
+    else
+    {
         printf("Response sent\n");
     }
-    
 }
 
-//Response to fetch by a client
-void handle_client_fetch(struct system_message msg, int client_system_queue){
-    #ifdef DEBUG
+// Response to fetch by a client
+void handle_client_fetch(struct system_message msg, int client_system_queue)
+{
+#ifdef DEBUG
     printf("Got FETCH event from client\n");
-    #endif
+#endif
     struct system_message fetch_response;
     int client_id = msg.payload.number;
     fetch_response.mtype = get_system_type(client_id, DISP2CLI_AVAILABLE_TYPES);
-    // fetch_response.payload.numbers[0] = 10;
 
-    for (size_t i = 0; i < 10; i++) {
-        fetch_response.payload.numbers[i] = AVAILABLE_NOTIFICATION[i];
+    for (size_t i = 0; i <= MAX_NOTIFICATION; i++)
+    {
+        fetch_response.payload.numbers[i] = AVAILABLE_NOTIFICATIONS[i];
     }
 
-    if(msgsnd(client_system_queue,&fetch_response,sizeof(fetch_response.payload),0)==-1){\
-    printf("Sending available types failed\n");
+    if (msgsnd(client_system_queue, &fetch_response, sizeof(fetch_response.payload), 0) == -1)
+    {
+        printf("Sending available types failed\n");
     }
-    else{
+    else
+    {
         printf("Sent notification array\n");
     }
 }
 
-void handle_client_system_notification_request(struct system_message msg, int client_system_queue){
-    #ifdef DEBUG
+void handle_client_system_notification_request(struct system_message msg, int client_system_queue)
+{
+#ifdef DEBUG
     printf("Got REQUEST event from client\n");
-    #endif
+#endif
 
     uint16_t client_id = msg.payload.numbers[0];
     uint32_t notification_requested = msg.payload.numbers[1];
 
     CONNECTED_CLIENTS[client_id] = notification_requested;
 #ifdef DEBUG
-        printf("Clients notification request accepted\n");
+    printf("Clients notification request accepted\n");
 #endif
 }
 
-void handle_client_system_message(struct system_message msg,int client_system_queue)
+void handle_client_system_message(struct system_message msg, int client_system_queue)
 {
     uint16_t client_id = get_id(msg.mtype);
     uint32_t mtype = get_type(msg.mtype);
@@ -179,16 +200,16 @@ void handle_client_system_message(struct system_message msg,int client_system_qu
     switch (mtype)
     {
     case CLI2DISP_LOGIN:
-        handle_client_login(msg,client_system_queue);
+        handle_client_login(msg, client_system_queue);
         break;
     case CLI2DISP_SUBSCRIBE:
-        handle_client_system_notification_request(msg,client_system_queue);
+        handle_client_system_notification_request(msg, client_system_queue);
         break;
     case CLI2DISP_FETCH:
-        handle_client_fetch(msg,client_system_queue);
+        handle_client_fetch(msg, client_system_queue);
         break;
     default:
-        printf("Unknown system message type from ID: %d: %d",client_id , mtype);
+        printf("Unknown system message type from ID: %d: %d", client_id, mtype);
     }
 }
 
@@ -211,7 +232,7 @@ void wait_for_messages(int producer_system_queue, int client_system_queue)
 #ifdef DEBUG
             printf("Received message on producer system queue!\n");
 #endif
-            handle_producer_system_message(msg,producer_system_queue);
+            handle_producer_system_message(msg, producer_system_queue);
             received = 1;
         }
         else if (errno != ENOMSG)
@@ -255,6 +276,11 @@ int main()
     {
         CONNECTED_PRODUCERS[i] = 0;
         CONNECTED_CLIENTS[i] = 0;
+    }
+
+    for (int i = 0; i < MAX_NOTIFICATION; ++i)
+    {
+        AVAILABLE_NOTIFICATIONS[i] = 0;
     }
 
     wait_for_messages(producer_system_queue, client_system_queue);

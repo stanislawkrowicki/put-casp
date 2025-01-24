@@ -3,11 +3,12 @@
 
 #include <stdint.h>
 
-#define MAX_MESSAGE_SIZE 1024
+#define MAX_MESSAGE_SIZE 256
 /*
     Maximum producer/client ID
 */
 #define MAX_ID 30
+#define MAX_NOTIFICATION 30
 
 extern const uint16_t P_SYSTEM_QUEUE_ID;
 extern const uint16_t C_SYSTEM_QUEUE_ID;
