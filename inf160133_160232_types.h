@@ -3,14 +3,17 @@
 
 #include <stdint.h>
 
-#define MAX_MESSAGE_SIZE 1024
+#define MAX_MESSAGE_SIZE 256
 /*
     Maximum producer/client ID
 */
 #define MAX_ID 30
+#define MAX_NOTIFICATION 30
 
 extern const uint16_t P_SYSTEM_QUEUE_ID;
 extern const uint16_t C_SYSTEM_QUEUE_ID;
+extern const uint16_t P_NOTIFICATION_QUEUE_ID;
+extern const uint16_t C_NOTIFICATION_QUEUE_ID;
 
 /*
     ID of the dispatcher for use with system_type
@@ -71,7 +74,8 @@ enum EDisp2CliSystemMessageType
 /*
     Function to create a system_type from id and type
 */
-system_type get_system_type(uint16_t id, uint32_t type);
+system_type
+get_system_type(uint16_t id, uint32_t type);
 
 /*
     Function to get target ID from a system_type

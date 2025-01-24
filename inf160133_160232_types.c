@@ -2,6 +2,8 @@
 
 const uint16_t P_SYSTEM_QUEUE_ID = 1;
 const uint16_t C_SYSTEM_QUEUE_ID = 2;
+const uint16_t P_NOTIFICATION_QUEUE_ID = 11;
+const uint16_t C_NOTIFICATION_QUEUE_ID = 12;
 const uint16_t DISPATCHER_ID = 0;
 const uint32_t MAX_TYPE = UINT32_MAX;
 

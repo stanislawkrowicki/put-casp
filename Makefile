@@ -6,6 +6,8 @@ endif
 
 TYPESFILE = inf160133_160232_types.c
 
+all: producer client dispatcher
+
 producer:
 	gcc $(CFLAGS) inf160133_160232_p.c $(TYPESFILE) -o p.out
 
@@ -18,3 +20,8 @@ dispatcher:
 
 clean:
 	@rm -f [pcd].out
+
+rm_ipcs:
+	ipcrm -q 0
+	ipcrm -q 1
+	ipcrm -q 2
