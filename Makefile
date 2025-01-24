@@ -20,3 +20,8 @@ dispatcher:
 
 clean:
 	@rm -f [pcd].out
+
+rm_ipcs:
+	ipcrm -q 0
+	ipcrm -q 1
+	ipcrm -q 2
