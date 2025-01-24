@@ -89,11 +89,7 @@ int main(int argc, char *argv[])
         printf("You need to provide your ID\n");
         return 1;
     }
-<<<<<<< HEAD
     
-=======
-
->>>>>>> 3431ae4cd7496fe446f8526ba31dd243e48c66a3
     int client_id = atoi(argv[1]);
     while (client_id <= 0)
     {

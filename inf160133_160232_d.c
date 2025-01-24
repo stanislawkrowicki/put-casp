@@ -198,6 +198,9 @@ void handle_client_system_message(struct system_message msg, int client_system_q
     case CLI2DISP_FETCH:
         handle_client_fetch(msg, client_system_queue);
         break;
+    case CLI2DISP_LOGOUT:
+        handle_client_logout(msg);
+        break;
     default:
         printf("Unknown system message type from ID: %d: %d", client_id, mtype);
     }
