@@ -102,6 +102,8 @@ int main(int argc, char *argv[])
 
     while (1)
     {
+        uint8_t has_notifications = 0;
+
         msg_size = msgrcv(queue, &fetch_response, sizeof(fetch_response.payload), fetch_response_type, IPC_NOWAIT);
         if (msg_size != -1)
         {
@@ -110,7 +112,14 @@ int main(int argc, char *argv[])
                 if (fetch_response.payload.numbers[i] == 1)
                 {
                     printf("Type %d available\n", i);
+                    has_notifications = 1;
                 }
+            }
+
+            if (!has_notifications)
+            {
+                printf("There are no notifications to receive!\n");
+                exit(1);
             }
             break;
         }
@@ -131,7 +140,7 @@ int main(int argc, char *argv[])
     {
         available = 0;
     }
-    while (t <= 0 || t > 10 || available == 0)
+    while (t <= 0 || t > MAX_NOTIFICATION || available == 0)
     {
         printf("Incorrect type of message required\n Try again\n");
         scanf("%d", &t);
@@ -149,7 +158,7 @@ int main(int argc, char *argv[])
 
     msg2.payload.numbers[0] = client_id;
     msg2.payload.numbers[1] = notification_type;
-    printf("You want to receive: %d\n", notification_type);
+    printf("You are %d and want to receive: %d\n", client_id, notification_type);
     if (msgsnd(queue, &msg2, sizeof(msg2.payload), 0) == -1)
     {
         perror("msgsnd error");
@@ -157,7 +166,19 @@ int main(int argc, char *argv[])
     }
     else
     {
-        printf("Message sent!\n");
+        printf("Subscribed!\n");
+    }
+
+    int message_queue = msgget(C_NOTIFICATION_QUEUE_ID, 0600 | IPC_CREAT);
+
+    struct system_message notification;
+
+    printf("Listening to notification %d\n", notification_type);
+
+    while (1)
+    {
+        msgrcv(message_queue, &notification, sizeof(notification.payload), get_system_type(client_id, notification_type), 0);
+        printf("%s\n", notification.payload.text);
     }
 
     return 0;
