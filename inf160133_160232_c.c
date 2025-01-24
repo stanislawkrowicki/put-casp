@@ -61,8 +61,33 @@ void login(int client_id, int queue){
     }
 }
 
+void logout(int client_id, int queue){
+    struct system_message logout;
+
+    logout.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_LOGOUT);
+
+    logout.payload.number = client_id;
+    printf("Message ID: %ld\n", logout.mtype);
+    if (msgsnd(queue, &logout, sizeof(logout.payload), 0) == -1)
+    {
+        perror("msgsnd error");
+        exit(1);
+    }
+    else
+    {
+        printf("Message sent!\n");
+    }
+
+}
+
 int main(int argc, char *argv[])
 {
+    if (argc != 2)
+    {
+        printf("You need to provide your ID\n");
+        return 1;
+    }
+    
     int client_id = atoi(argv[1]);
     while (client_id<=0)
     {

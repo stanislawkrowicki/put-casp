@@ -49,6 +49,7 @@ enum ECli2DispSystemMessageType
     CLI2DISP_FETCH = 2,
     CLI2DISP_SUBSCRIBE = 3,
     CLI2DISP_UNSUBSCRIBE = 4
+    CLI2DISP_LOGOUT = 5
 };
 
 /*
