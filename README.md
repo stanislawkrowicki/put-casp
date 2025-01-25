@@ -56,7 +56,7 @@ NEW_TYPE(TYPE) - nowy typ zarejestrowany przez producentów
 ```
 
 ### Scenariusza komunikacji między klientem a dyspozytorem
-1. Logowanie
+1. Logowanie  <br>
 **Klient**
 ```
 mtype - CLI2DISP_LOGIN 
