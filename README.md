@@ -3,10 +3,11 @@ Repozytorium projektu z przedmiotu Programowanie Systemowe i Współbieżne @PUT
 
 ![Application Architecture](./docs/architecture.svg)
 
-### Konwencja wiadomości systemowych
-Wiadomości systemowe i zwykłe są wysyłane w odmienny sposób.
-Z racji, że używamy jedną kolejkę, a potrzebujemy mieć możliwość przekazania danych z dyspozytora tylko do wybranego klienta/producenta, to `TYPE` wiadomości scala dwie wartości - ID odbiorcy (2 bajty) do którego ma dotrzeć wiadomość i typ komunikatu (4 bajty).
-Także, gdy `TYPE = 0xAAAA0000FFFF`, to `0xAAAA` jest ID odbiorcy, a `0x0000FFFF` to typ komunikatu.
+### Konwencja typów wiadomości
+Z racji, że używamy jedną kolejkę, a wiadomości muszą trafiać do różnych adresatów wprowadzono system typów.
+Pole `mtype` struktury wysyłanej przez kolejkę IPC ma 4 najmłodsze bajty równe typowi powiadomienia,
+a 2 starsze bajty równe ID adresata.
+Na ID adresata przeznaczone są tylko dwa bajty z powodu konieczności możliwości zanegowania całego `mtype`.
 
 ### Wiadomości systemowe producenta 
 ```
@@ -55,3 +56,6 @@ To samo co normalnie, ale z dodanym `DEBUG=1`
 ```
 make client DEBUG=1
 ```
+
+### Wyczyszczenie kolejek
+Polecenie `make rm_ipcs` usuwa wszystkie kolejki stworzone przez cały system.
