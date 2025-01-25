@@ -1,3 +1,5 @@
+#define _GNU_SOURCE // see man sigaction(2), feature_test_macros(7
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -5,7 +7,7 @@
 #include <sys/msg.h>
 #include <errno.h>
 #include <string.h>
-#include<signal.h>
+#include <signal.h>
 #include <unistd.h>
 
 #include "inf160133_160232_types.h"
@@ -13,7 +15,9 @@
 int client_id;
 int queue;
 int notification_type;
-int login(int client_id){
+
+int login(int client_id)
+{
 
     struct system_message msg;
 
@@ -68,8 +72,8 @@ int login(int client_id){
     }
 }
 
-
-void notification_request(struct system_message fetch_response){
+void notification_request(struct system_message fetch_response)
+{
     int t;
     scanf("%d", &t);
     int available;
@@ -121,12 +125,12 @@ void notification_request(struct system_message fetch_response){
         msgrcv(message_queue, &notification, sizeof(notification.payload), get_system_type(client_id, notification_type), 0);
         printf("%s\n", notification.payload.text);
     }
-
 }
 
-void logout(){
+void logout()
+{
     struct system_message logout;
-    logout.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_LOGOUT );
+    logout.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_LOGOUT);
     logout.payload.number = client_id;
     if (msgsnd(queue, &logout, sizeof(logout.payload), 0) == -1)
     {
@@ -134,12 +138,14 @@ void logout(){
     }
     else
     {
-        printf("\nLogging out...\n");    }
+        printf("\nLogging out...\n");
+    }
     sleep(1);
     exit(0);
 }
 
-void fetch(){
+void fetch()
+{
     struct system_message fetch;
     fetch.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_FETCH);
     fetch.payload.number = client_id;
@@ -187,7 +193,8 @@ void fetch(){
     notification_request(fetch_response);
 }
 
-void unsubscribe(){
+void unsubscribe()
+{
     struct system_message unsub;
     unsub.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_UNSUBSCRIBE);
     unsub.payload.numbers[0] = client_id;
@@ -198,9 +205,12 @@ void unsubscribe(){
     }
     else
     {
-        printf("\nNotification unsubscribed\n");   
+        printf("\nNotification unsubscribed\n");
         fetch();
-        }
+    }
+
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGQUIT, unsubscribe);
 }
 
 int main(int argc, char *argv[])
@@ -211,7 +221,7 @@ int main(int argc, char *argv[])
         printf("You need to provide your ID\n");
         return 1;
     }
-    
+
     client_id = atoi(argv[1]);
     while (client_id <= 0)
     {
@@ -224,8 +234,27 @@ int main(int argc, char *argv[])
     printf("Use 'Ctrl C' to logout\n");
 
     queue = msgget(C_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
-    signal(SIGINT,logout);
-    signal(SIGQUIT,unsubscribe);
+
+    struct sigaction logout_sa;
+    memset(&logout_sa, 0, sizeof(logout_sa));
+    logout_sa.sa_handler = logout;
+    logout_sa.sa_flags = SA_NOMASK;
+
+    if (sigaction(SIGINT, &logout_sa, NULL) == -1)
+    {
+        perror("logout sigaction");
+    }
+
+    struct sigaction unsubscribe_sa;
+    memset(&unsubscribe_sa, 0, sizeof(unsubscribe_sa));
+    unsubscribe_sa.sa_handler = unsubscribe;
+    unsubscribe_sa.sa_flags = SA_NOMASK;
+
+    if (sigaction(SIGQUIT, &unsubscribe_sa, NULL) == -1)
+    {
+        perror("unsubscribe sigaction");
+    }
+
     client_id = login(client_id);
     fetch();
     printf("Use 'Ctrl \' if you want to unsubscribe notification");
