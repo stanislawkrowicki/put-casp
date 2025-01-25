@@ -22,6 +22,7 @@ clean:
 	@rm -f [pcd].out
 
 rm_ipcs:
-	ipcrm -q 0
-	ipcrm -q 1
-	ipcrm -q 2
+	ipcrm -Q 1
+	ipcrm -Q 2
+	ipcrm -Q 11
+	ipcrm -Q 12
