@@ -10,7 +10,7 @@ a 2 starsze bajty równe ID adresata.
 Na ID adresata przeznaczone są tylko dwa bajty z powodu konieczności możliwości zanegowania całego `mtype`.
 
 ## Struktura wiadomości systemowej
-struct system_message
+```struct system_message
 {
     long mtype;
     union
@@ -19,7 +19,7 @@ struct system_message
         unsigned int number;
         uint32_t numbers[MAX_MESSAGE_SIZE / sizeof(uint32_t)];
     } payload;
-};
+};```
 
 ### Wiadomości systemowe producenta 
 ```
