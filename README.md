@@ -56,13 +56,13 @@ NEW_TYPE(TYPE) - nowy typ zarejestrowany przez producentów
 ```
 
 ### Scenariusza komunikacji między klientem a dyspozytorem
-1. Logowanie//
-Klient
+1. Logowanie
+**Klient**
 ```
 mtype - CLI2DISP_LOGIN 
 payload - identyfikator klienta
 ```
-Dyspozytor
+**Dyspozytor**
 ```
 Odbiera identyfikator klienta i wysyła odpowiedź:
 - Jeśli identyfikator już istnieje:
