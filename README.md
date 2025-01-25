@@ -9,7 +9,7 @@ Pole `mtype` struktury wysyłanej przez kolejkę IPC ma 4 najmłodsze bajty rów
 a 2 starsze bajty równe ID adresata.
 Na ID adresata przeznaczone są tylko dwa bajty z powodu konieczności możliwości zanegowania całego `mtype`.
 
-## Struktura wiadomości systemowej
+#### Struktura wiadomości systemowej
 ```struct system_message
 {
     long mtype;
@@ -53,6 +53,25 @@ LOGIN_FAILED() - błąd logowania, np. osiągnięto już maksymalną ilość kli
 AVAILABLE_TYPES(TYPE[]) - aktualnie zarejestrowane typy powiadomień 
 
 NEW_TYPE(TYPE) - nowy typ zarejestrowany przez producentów
+```
+
+### Scenariusza komunikacji między klientem a dyspozytorem
+1. Logowanie
+Klient
+```
+mtype - CLI2DISP_LOGIN (1)
+payload - identyfikator klienta
+```
+Dyspozytor
+```
+Odbiera identyfikator klienta i wysyła odpowiedź:
+- Jeśli identyfikator już istnieje:
+    mtype - DISP2CLI_LOGIN_FAILED (2)  
+    payload - komunikat o błędzie (np. "ID zajęte")  
+
+- Jeśli identyfikator jest nowy:    
+    mtype - DISP2CLI_LOGIN_OK (3)  
+    payload - potwierdzenie logowania  
 ```
 
 ### Kompilacja kodu
