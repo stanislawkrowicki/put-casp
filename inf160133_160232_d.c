@@ -10,8 +10,12 @@
 
 #include "inf160133_160232_types.h"
 
-uint16_t CONNECTED_PRODUCERS[MAX_ID + 1];          // type of messages sent if producer connected, 0 otherwise
-uint16_t *CLIENTS_SUBSCRIPTIONS;                   // subscribed type if client connected, 0 otherwise
+uint16_t CONNECTED_PRODUCERS[MAX_ID + 1]; // type of messages sent if producer connected, 0 otherwise
+
+/*  subscribed type if client has subscribed, 0 if not connected,
+UINT16_MAX if connected but not subscribed yet */
+uint16_t *CLIENTS;
+
 int AVAILABLE_NOTIFICATIONS[MAX_NOTIFICATION + 1]; // 0 if type not available 1 if available
 
 void get_available_notifications(uint32_t *types, int *len)
@@ -116,7 +120,7 @@ void handle_client_login(struct system_message msg, int client_system_queue)
     system_type login_ok_type = get_system_type(client_id, DISP2CLI_LOGIN_OK);
     system_type login_failed_type = get_system_type(client_id, DISP2CLI_LOGIN_FAILED);
 
-    if (CLIENTS_SUBSCRIPTIONS[client_id] != 0)
+    if (CLIENTS[client_id] > 0)
     {
         response.mtype = login_failed_type;
 
@@ -126,8 +130,7 @@ void handle_client_login(struct system_message msg, int client_system_queue)
     }
     else
     {
-        // TODO: we need to use other flag than 1
-        CLIENTS_SUBSCRIPTIONS[client_id] = -1; // -1 for client id taken but not subscription yet
+        CLIENTS[client_id] = UINT16_MAX;
 
         response.mtype = login_ok_type;
 #ifdef DEBUG
@@ -137,12 +140,14 @@ void handle_client_login(struct system_message msg, int client_system_queue)
 
     if (msgsnd(client_system_queue, &response, sizeof(response.payload.number), 0) == -1)
     {
-        printf("Response failed\n");
+        perror("login response sent failed");
     }
+#ifdef DEBUG
     else
     {
-        printf("Response sent\n");
+        printf("Login response sent\n");
     }
+#endif
 }
 
 // Response to fetch by a client
@@ -162,12 +167,14 @@ void handle_client_fetch(struct system_message msg, int client_system_queue)
 
     if (msgsnd(client_system_queue, &fetch_response, sizeof(fetch_response.payload), 0) == -1)
     {
-        printf("Sending available types failed\n");
+        perror("fetch msgsnd failed");
     }
+#ifdef DEBUG
     else
     {
         printf("Sent notification array\n");
     }
+#endif
 }
 
 void handle_client_system_notification_request(struct system_message msg, int client_system_queue)
@@ -179,26 +186,28 @@ void handle_client_system_notification_request(struct system_message msg, int cl
     uint16_t client_id = msg.payload.numbers[0];
     uint32_t notification_requested = msg.payload.numbers[1];
 
-    CLIENTS_SUBSCRIPTIONS[client_id] = notification_requested;
+    CLIENTS[client_id] = notification_requested;
 #ifdef DEBUG
     printf("Clients notification request accepted, %d subscribes %d\n", client_id, notification_requested);
 #endif
 }
 
-void handle_client_logout(struct system_message msg){
+void handle_client_logout(struct system_message msg)
+{
     uint16_t client_id = msg.payload.number;
-    CLIENTS_SUBSCRIPTIONS[client_id] = 0;
-    #ifdef DEBUG
-    printf("Client %d LOGOUT...\n",client_id);
+    CLIENTS[client_id] = 0;
+#ifdef DEBUG
+    printf("Client %d LOGOUT...\n", client_id);
 #endif
 }
 
-void handle_client_unsub(struct system_message msg){
+void handle_client_unsub(struct system_message msg)
+{
     uint16_t client_id = msg.payload.numbers[0];
+    CLIENTS[client_id] = UINT16_MAX;
+#ifdef DEBUG
     uint32_t notification = msg.payload.numbers[1];
-    CLIENTS_SUBSCRIPTIONS[client_id] = -1;
-    #ifdef DEBUG
-    printf("Client %d unsubscribed %d notification type\n",client_id,notification);
+    printf("Client %d unsubscribed %d notification type\n", client_id, notification);
 #endif
 }
 void handle_client_system_message(struct system_message msg, int client_system_queue)
@@ -279,7 +288,7 @@ void dispatch_message(int client_queue, struct system_message msg)
 
     for (int i = 0; i <= MAX_ID; ++i)
     {
-        if (CLIENTS_SUBSCRIPTIONS[i] == type)
+        if (CLIENTS[i] == type)
         {
 #ifdef DEBUG
             printf("Client %d subscribes %d, sending\n", i, type);
@@ -326,23 +335,27 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+#ifdef DEBUG
     printf("System queues created successfully\n");
+#endif
 
     int shmid = shmget(SUBSCRIPTIONS_SHM_KEY, sizeof(uint16_t) * (MAX_ID + 1), 0600 | IPC_CREAT);
-    CLIENTS_SUBSCRIPTIONS = (uint16_t *)shmat(shmid, NULL, 0);
+    CLIENTS = (uint16_t *)shmat(shmid, NULL, 0);
 
-    if (CLIENTS_SUBSCRIPTIONS == (uint16_t *)-1)
+    if (CLIENTS == (uint16_t *)-1)
     {
         perror("shmat failed");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
+#ifdef DEBUG
     printf("Connected to shared memory successfully\n");
+#endif
 
     for (int i = 0; i <= MAX_ID; ++i)
     {
         CONNECTED_PRODUCERS[i] = 0;
-        CLIENTS_SUBSCRIPTIONS[i] = 0;
+        CLIENTS[i] = 0;
     }
 
     for (int i = 0; i < MAX_NOTIFICATION; ++i)

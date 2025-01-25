@@ -9,7 +9,7 @@
 
 #include "inf160133_160232_types.h"
 
-int G_queue;
+int G_system_queue;
 int G_id;
 int G_producing_type;
 
@@ -21,12 +21,12 @@ void produce_messages()
 
     while (1)
     {
-        printf("Podaj treść wiadomości lub EXIT by wyjść: ");
+        printf("Enter notification content or EXIT to exit: ");
         scanf("%s", text);
 
         if (strcmp(text, "EXIT") == 0)
         {
-            exit(1);
+            exit(EXIT_SUCCESS);
         }
 
         struct system_message msg;
@@ -36,7 +36,7 @@ void produce_messages()
         if (msgsnd(message_queue, &msg, sizeof(msg.payload), 0) == -1)
         {
             perror("Error while sending notification");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
         else
         {
@@ -47,13 +47,14 @@ void produce_messages()
 
 void login_ok()
 {
-    printf("Login accepted\n");
+    printf("Login accepted.\nYour ID is %d and you are producing %d.\n", G_id, G_producing_type);
     produce_messages();
 }
 
 void login_failed()
 {
     printf("Login failed. Producer already exists or there are too many producers.\n");
+    exit(EXIT_FAILURE);
 }
 
 void wait_for_login_response()
@@ -65,7 +66,7 @@ void wait_for_login_response()
 
     while (1)
     {
-        ssize_t msg_size = msgrcv(G_queue, &response, sizeof(response.payload), ok_id, IPC_NOWAIT);
+        ssize_t msg_size = msgrcv(G_system_queue, &response, sizeof(response.payload), ok_id, IPC_NOWAIT);
         if (msg_size != -1)
         {
             login_ok();
@@ -76,7 +77,7 @@ void wait_for_login_response()
             perror("msgrcv error while waiting for login response\n");
         }
 
-        msg_size = msgrcv(G_queue, &response, sizeof(response.payload), failed_id, IPC_NOWAIT);
+        msg_size = msgrcv(G_system_queue, &response, sizeof(response.payload), failed_id, IPC_NOWAIT);
         if (msg_size != -1)
         {
             login_failed();
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        printf("Podaj ID i typ jaki będziesz produkować.");
+        printf("Provide your ID and type you are going to produce as arguments.\n");
         return 1;
     }
 
@@ -104,17 +105,17 @@ int main(int argc, char *argv[])
 
     if (G_id < 1 || G_id > MAX_ID)
     {
-        printf("ID musi być pomiędzy 1 a %d\n", MAX_ID);
+        printf("Your id must be between 1 and %d\n", MAX_ID);
         return 1;
     }
 
     if (G_producing_type < 1 || G_producing_type > MAX_NOTIFICATION)
     {
-        printf("Typ wiadomości musi być pomiędzy 1 a %d.", MAX_NOTIFICATION);
+        printf("Message type must be between 1 and %d.\n", MAX_NOTIFICATION);
         return 1;
     }
 
-    G_queue = msgget(P_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
+    G_system_queue = msgget(P_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
 
     struct system_message msg;
 
@@ -123,15 +124,17 @@ int main(int argc, char *argv[])
     msg.payload.numbers[0] = G_id;             // Producer ID
     msg.payload.numbers[1] = G_producing_type; // Type to listen to
 
-    if (msgsnd(G_queue, &msg, sizeof(msg.payload), 0) == -1)
+    if (msgsnd(G_system_queue, &msg, sizeof(msg.payload), 0) == -1)
     {
         perror("msgsnd error");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
+#ifdef DEBUG
     else
     {
         printf("Login request sent!\n");
     }
+#endif
 
     wait_for_login_response();
 
