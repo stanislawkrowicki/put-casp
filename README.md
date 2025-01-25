@@ -56,21 +56,21 @@ NEW_TYPE(TYPE) - nowy typ zarejestrowany przez producentów
 ```
 
 ### Scenariusza komunikacji między klientem a dyspozytorem
-1. Logowanie
+1. Logowanie//
 Klient
 ```
-mtype - CLI2DISP_LOGIN (1)
+mtype - CLI2DISP_LOGIN 
 payload - identyfikator klienta
 ```
 Dyspozytor
 ```
 Odbiera identyfikator klienta i wysyła odpowiedź:
 - Jeśli identyfikator już istnieje:
-    mtype - DISP2CLI_LOGIN_FAILED (2)  
+    mtype - DISP2CLI_LOGIN_FAILED  
     payload - komunikat o błędzie (np. "ID zajęte")  
 
 - Jeśli identyfikator jest nowy:    
-    mtype - DISP2CLI_LOGIN_OK (3)  
+    mtype - DISP2CLI_LOGIN_OK  
     payload - potwierdzenie logowania  
 ```
 
