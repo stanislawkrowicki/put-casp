@@ -127,7 +127,7 @@ void handle_client_login(struct system_message msg, int client_system_queue)
     else
     {
         // TODO: we need to use other flag than 1
-        CLIENTS_SUBSCRIPTIONS[client_id] = 1; // 1 for client id taken
+        CLIENTS_SUBSCRIPTIONS[client_id] = -1; // -1 for client id taken but not subscription yet
 
         response.mtype = login_ok_type;
 #ifdef DEBUG
@@ -185,6 +185,22 @@ void handle_client_system_notification_request(struct system_message msg, int cl
 #endif
 }
 
+void handle_client_logout(struct system_message msg){
+    uint16_t client_id = msg.payload.number;
+    CLIENTS_SUBSCRIPTIONS[client_id] = 0;
+    #ifdef DEBUG
+    printf("Client %d LOGOUT...\n",client_id);
+#endif
+}
+
+void handle_client_unsub(struct system_message msg){
+    uint16_t client_id = msg.payload.numbers[0];
+    uint32_t notification = msg.payload.numbers[1];
+    CLIENTS_SUBSCRIPTIONS[client_id] = -1;
+    #ifdef DEBUG
+    printf("Client %d unsubscribed %d notification type\n",client_id,notification);
+#endif
+}
 void handle_client_system_message(struct system_message msg, int client_system_queue)
 {
     uint16_t client_id = get_id(msg.mtype);
@@ -203,6 +219,9 @@ void handle_client_system_message(struct system_message msg, int client_system_q
         break;
     case CLI2DISP_LOGOUT:
         handle_client_logout(msg);
+        break;
+    case CLI2DISP_UNSUBSCRIBE:
+        handle_client_unsub(msg);
         break;
     default:
         printf("Unknown system message type from ID: %d: %d", client_id, mtype);
