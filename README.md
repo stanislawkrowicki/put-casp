@@ -8,6 +8,18 @@ Wiadomości systemowe i zwykłe są wysyłane w odmienny sposób.
 Z racji, że używamy jedną kolejkę, a potrzebujemy mieć możliwość przekazania danych z dyspozytora tylko do wybranego klienta/producenta, to `TYPE` wiadomości scala dwie wartości - ID odbiorcy (2 bajty) do którego ma dotrzeć wiadomość i typ komunikatu (4 bajty).
 Także, gdy `TYPE = 0xAAAA0000FFFF`, to `0xAAAA` jest ID odbiorcy, a `0x0000FFFF` to typ komunikatu.
 
+## Struktura wiadomości systemowej
+struct system_message
+{
+    long mtype;
+    union
+    {
+        char text[MAX_MESSAGE_SIZE];
+        unsigned int number;
+        uint32_t numbers[MAX_MESSAGE_SIZE / sizeof(uint32_t)];
+    } payload;
+};
+
 ### Wiadomości systemowe producenta 
 ```
 LOGIN(ID, TYPE) - loguje się do dyspozytora podając swoje ID i typ powiadomień które będzie wysyłał.

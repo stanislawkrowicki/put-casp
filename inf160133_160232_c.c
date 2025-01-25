@@ -7,12 +7,15 @@
 #include <string.h>
 #include<signal.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "inf160133_160232_types.h"
 
 int client_id;
 int queue;
 int notification_type;
+volatile sig_atomic_t unsubscribe_flag = 0;
+
 int login(int client_id){
 
     struct system_message msg;
@@ -187,7 +190,7 @@ void fetch(){
     notification_request(fetch_response);
 }
 
-void unsubscribe(){
+void unsubscribe(int signum){
     struct system_message unsub;
     unsub.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_UNSUBSCRIBE);
     unsub.payload.numbers[0] = client_id;
@@ -199,8 +202,8 @@ void unsubscribe(){
     else
     {
         printf("\nNotification unsubscribed\n");   
-        fetch();
         }
+        fetch();
 }
 
 int main(int argc, char *argv[])
