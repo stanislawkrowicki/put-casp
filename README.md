@@ -19,8 +19,8 @@ Na ID adresata przeznaczone są tylko dwa bajty z powodu konieczności możliwo�
         unsigned int number;
         uint32_t numbers[MAX_MESSAGE_SIZE / sizeof(uint32_t)];
     } payload;
-};```
-
+};
+```
 ### Wiadomości systemowe producenta 
 ```
 LOGIN(ID, TYPE) - loguje się do dyspozytora podając swoje ID i typ powiadomień które będzie wysyłał.
