@@ -9,8 +9,8 @@ Pole `mtype` struktury wysyłanej przez kolejkę IPC ma 4 najmłodsze bajty rów
 a 2 starsze bajty równe ID adresata.
 Na ID adresata przeznaczone są tylko dwa bajty z powodu konieczności możliwości zanegowania całego `mtype`.
 
-#### Struktura wiadomości systemowej
-```struct system_message
+#### Struktura wiadomości
+```struct message_event
 {
     long mtype;
     union
@@ -21,14 +21,24 @@ Na ID adresata przeznaczone są tylko dwa bajty z powodu konieczności możliwo�
     } payload;
 };
 ```
+#### Sposób przesyłu danych
+Wiadomość może zawierać albo tekst, albo liczbę (uint) albo tablicę liczb uint32_t. 
+Najczęściej używane:
+ - Jeśli zapytanie ma jeden argument (np. LOGIN(ID)), to używamy pola number.
+ - Jeśli zapytanie ma kilka argumentów, to podajemy je po kolei do tablicy numbers.
+ - Powiadomienia wypełniają pole text.
 
-### Ograniczenia systemowe
+### Ograniczenia systemowe 
 
 Zalogowanych może być maksymalnie 30 klientów i 30 prodcentów.
-**MAX_ID = 30**  <br>
+**MAX_ID = 30**
+
+Możliwe byłoby UINT16_MAX - 1 (UINT16_MAX jest wykorzystywane jako flaga)
 
 W systemie może być dostępnych maskymalnie 30 typów powiadomień.
 **MAX_NOTIFICATION = 30**
+
+Możliwe byłoby UINT32_MAX
 
 
 ### Wiadomości systemowe producenta 
@@ -46,6 +56,8 @@ LOGIN_FAILED() - błąd logowania, np. osiągnieto już maksymalną ilość prod
 ### Wiadomości systemowe klienta
 ```
 LOGIN(ID) - loguje się do dyspozytora podając swoje ID
+
+LOGOUT(ID) - wylogowuje klienta całkowice (można zalogować nowego klienta na to samo ID) -- dodatkowe
 
 FETCH() - prośba do dyspozytora o zwrócenie aktualnie zarejestrowanych typów wiadomości
 
@@ -65,25 +77,25 @@ AVAILABLE_TYPES(TYPE[]) - aktualnie zarejestrowane typy powiadomień
 NEW_TYPE(TYPE) - nowy typ zarejestrowany przez producentów
 ```
 
-### Scenariusza komunikacji między klientem a dyspozytorem
+### Scenariusz komunikacji między klientem a dyspozytorem
 
 #### Logowanie
 Klient
 ```
 Wysyła prośbę o logowanie:
 mtype - CLI2DISP_LOGIN 
-payload - identyfikator klienta
+payload.number - identyfikator klienta
 ```
 Dyspozytor
 ```
 Odbiera identyfikator klienta i wysyła odpowiedź:
 - Jeśli identyfikator już istnieje:
     mtype - DISP2CLI_LOGIN_FAILED  
-    payload - komunikat o błędzie (np. "ID zajęte")  
+    payload - puste
 
-- Jeśli identyfikator jest nowy:    
+- Jeśli identyfikator jest nowy:  
     mtype - DISP2CLI_LOGIN_OK  
-    payload - potwierdzenie logowania
+    payload - puste
     Ustawia identyfikator klienta jako zajęty.  
 ```
 
@@ -92,56 +104,76 @@ Klient
 ```
 Wysyła żądanie o otrzymanie listy dostępnych powiadomień:
 mtype - CLI2DISP_FETCH 
-payload - identyfikator klienta
+payload.number - identyfikator klienta
 ```
 Dyspozytor
 ```
 Odbiera identyfikator klienta i wysyła odpowiedź:
 mtype - DISP2CLI_AVAILABLE_TYPES
-payload[0] - identyfikator klienta
-payload[1] - lista typów powiadomień (wartośc 1 informuje o dostępności danego typu)
+payload.numbers[i] = 1 jeśli powiadomienie typu i istnieje, w przeciwnym wypadku 0
 ```
 
-#### Przekazywanie powiadomień
+#### Nowy typ zarejestrowany przez producenta
+Klient
+```
+Klient po otrzymaniu wiadomości o nowym typie wyświetla wiadomość o jego istnieniu.
+```
+Dyspozytor
+```
+Rozsyła do wszystkich klientów wiadomość systemową informującą o nowym typie.
+mtype - DISP2CLI_NEW_TYPE
+payload.number = ID nowego typu
+```
+
+#### Subskrypcja powiadomień
 Klient
 ```
 Wysyła informacje o subskrypcji typu powiadomienia:
 mtype - CLI2DISP_SUBSCRIBE 
-payload[0] - identyfikator klienta
-payload[1] - typ zasubskrybowane powiadomienia
+payload.numbers[0] - identyfikator klienta
+payload.numbers[1] - typ zasubskrybowane powiadomienia
 ```
-Dyspozytor
-```
-Odbiera identyfikator klienta i jaki typ chce otrzymywać i wysyła odpowiedź:
-mtype - DISP2CLI_
-payload - ?
-```
-#### Wylogowanie
-Klient
-```
-Wysyła :
-mtype - CLI2DISP_LOGOUT 
-payload - identyfikator klienta
-```
-Dyspozytor
-```
-Odbiera identyfikator klienta:
-Ustawia idnetyfikator klienta jako wolny.
-```
+
 #### Rezygnacja z subskrypcji
 Klient
 ```
-Wysyła :
+Wysyła:
 mtype - CLI2DISP_UNSUBSCRIBE 
-payload[0] - identyfikator klienta
-payload[1] - typ powiadomienia, z którego chce zrezygnować
+payload.numbers[0] - identyfikator klienta
+payload.numbers[1] - typ powiadomienia, z którego chce zrezygnować
+```
+Dyspozytor
+```
+Odbiera identyfikator klienta.
+Usuwa sybskrypcje klienta dla wskazanego typu powiadomienia,
+ale dalej trzyma klienta jako zalogowanego.
+```
+
+#### Wylogowanie
+Klient
+```
+Wysyła:
+mtype - CLI2DISP_LOGOUT 
+payload.number - identyfikator klienta
 ```
 Dyspozytor
 ```
 Odbiera identyfikator klienta:
-Usuwa sybskrypcje klienta dla wskazanego typu powiadomienia.
+Ustawia identyfikator klienta jako wolny.
 ```
-### Scenariusza komunikacji między producentem a dyspozytorem
+
+#### Odbiór powiadomienia (KOLEJKA POWIADOMIEŃ KLIENTA)
+Klient
+```
+Nasłuchuje wiadomości o mtype z jego ID jako adresatem i typem powiadomienia który subskrybuje.
+```
+Dyspozytor
+```
+Po przyjęciu powiadomienia od producenta, sprawdza którzy klienci subskrybują ten typ powiadomień
+i rozsyła je do każdego klienta jako oddzielne wiadomości z różnymi adresatami.
+```
+
+### Scenariusz komunikacji między producentem a dyspozytorem
 
 #### Logowanie
 Producent
@@ -164,9 +196,21 @@ Odbiera identyfikator klienta i wysyła odpowiedź:
     Ustawia identyfikator klienta jako zajęty.  
 ```
 
+#### Wysłanie powiadomienia (KOLEJKA POWIADOMIEŃ PRODUCENTA)
+Producent
+```
+Wysyła powiadomienie:
+mtype - ID powiadomienia (część adresata jest w tym przypadku ignorowana)
+payload.text - treść powiadomienia pobrana przy użyciu scanf()
+```
+Dyspozytor
+```
+Odbiera powiadomienie i przekierowuje je do klienta (opisane w sekcji "Scenariusz komunikacji między klientem a dyspozytorem")
+```
+
 ### Kompilacja kodu
 ```
-make
+make // kompiluje wszystko
 make client
 make producer
 make dispatcher
