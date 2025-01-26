@@ -70,28 +70,27 @@ enum EDisp2CliSystemMessageType
 /*
     Dispatcher -> Producer/Client identification type
 */
-#define system_type int64_t
+#define message_type int64_t
 
 /*
     Function to create a system_type from id and type
 */
-system_type
-get_system_type(uint16_t id, uint32_t type);
+message_type get_message_type(uint16_t id, uint32_t type);
 
 /*
     Function to get target ID from a system_type
 */
-uint16_t get_id(system_type st);
+uint16_t get_id(message_type st);
 
 /*
     Function to get message type from a system_type
 */
-uint32_t get_type(system_type st);
+uint32_t get_type(message_type st);
 
 /*
-    System message structure
+    Message structure
 */
-struct system_message
+struct message_event
 {
     long mtype;
     union

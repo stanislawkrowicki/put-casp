@@ -19,9 +19,9 @@ int G_notification_type;
 
 uint16_t login(int client_id)
 {
-    struct system_message msg;
+    struct message_event msg;
 
-    msg.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_LOGIN);
+    msg.mtype = get_message_type(DISPATCHER_ID, CLI2DISP_LOGIN);
 
     msg.payload.number = client_id;
     if (msgsnd(G_system_queue, &msg, sizeof(msg.payload), 0) == -1)
@@ -32,9 +32,9 @@ uint16_t login(int client_id)
 
     // Login response
     ssize_t msg_size;
-    struct system_message response;
-    system_type ok_id = get_system_type(client_id, DISP2CLI_LOGIN_OK);
-    system_type failed_id = get_system_type(client_id, DISP2CLI_LOGIN_FAILED);
+    struct message_event response;
+    message_type ok_id = get_message_type(client_id, DISP2CLI_LOGIN_OK);
+    message_type failed_id = get_message_type(client_id, DISP2CLI_LOGIN_FAILED);
 
     while (1)
     {
@@ -71,7 +71,7 @@ void listen_to_notification(uint32_t notification_type)
 {
     int message_queue = msgget(C_NOTIFICATION_QUEUE_ID, 0600 | IPC_CREAT);
 
-    struct system_message notification;
+    struct message_event notification;
 
     printf("Listening to notification %d\n", notification_type);
 
@@ -79,12 +79,12 @@ void listen_to_notification(uint32_t notification_type)
 
     while (1)
     {
-        msgrcv(message_queue, &notification, sizeof(notification.payload), get_system_type(G_client_id, notification_type), 0);
+        msgrcv(message_queue, &notification, sizeof(notification.payload), get_message_type(G_client_id, notification_type), 0);
         printf("%s\n", notification.payload.text);
     }
 }
 
-void notification_request(struct system_message fetch_response)
+void notification_request(struct message_event fetch_response)
 {
     int t;
     scanf("%d", &t);
@@ -101,9 +101,9 @@ void notification_request(struct system_message fetch_response)
     G_notification_type = t;
 
     // Notification request
-    struct system_message sub_msg;
+    struct message_event sub_msg;
 
-    sub_msg.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_SUBSCRIBE);
+    sub_msg.mtype = get_message_type(DISPATCHER_ID, CLI2DISP_SUBSCRIBE);
 
     sub_msg.payload.numbers[0] = G_client_id;
     sub_msg.payload.numbers[1] = G_notification_type;
@@ -118,8 +118,8 @@ void notification_request(struct system_message fetch_response)
 
 void logout()
 {
-    struct system_message logout;
-    logout.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_LOGOUT);
+    struct message_event logout;
+    logout.mtype = get_message_type(DISPATCHER_ID, CLI2DISP_LOGOUT);
     logout.payload.number = G_client_id;
     if (msgsnd(G_system_queue, &logout, sizeof(logout.payload), 0) == -1)
     {
@@ -135,8 +135,8 @@ void logout()
 
 void fetch()
 {
-    struct system_message fetch;
-    fetch.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_FETCH);
+    struct message_event fetch;
+    fetch.mtype = get_message_type(DISPATCHER_ID, CLI2DISP_FETCH);
     fetch.payload.number = G_client_id;
     if (msgsnd(G_system_queue, &fetch, sizeof(fetch.payload), 0) == -1)
     {
@@ -144,8 +144,8 @@ void fetch()
     }
 
     ssize_t msg_size;
-    struct system_message fetch_response;
-    system_type fetch_response_type = get_system_type(G_client_id, DISP2CLI_AVAILABLE_TYPES);
+    struct message_event fetch_response;
+    message_type fetch_response_type = get_message_type(G_client_id, DISP2CLI_AVAILABLE_TYPES);
 
     while (1)
     {
@@ -180,8 +180,8 @@ void fetch()
 
 void unsubscribe()
 {
-    struct system_message unsub;
-    unsub.mtype = get_system_type(DISPATCHER_ID, CLI2DISP_UNSUBSCRIBE);
+    struct message_event unsub;
+    unsub.mtype = get_message_type(DISPATCHER_ID, CLI2DISP_UNSUBSCRIBE);
     unsub.payload.numbers[0] = G_client_id;
     unsub.payload.numbers[1] = G_notification_type;
     if (msgsnd(G_system_queue, &unsub, sizeof(unsub.payload), 0) == -1)
