@@ -56,9 +56,11 @@ NEW_TYPE(TYPE) - nowy typ zarejestrowany przez producentów
 ```
 
 ### Scenariusza komunikacji między klientem a dyspozytorem
-##### Logowanie
+
+#### Logowanie
 Klient
 ```
+Wysyła prośbę o logowanie:
 mtype - CLI2DISP_LOGIN 
 payload - identyfikator klienta
 ```
@@ -71,8 +73,65 @@ Odbiera identyfikator klienta i wysyła odpowiedź:
 
 - Jeśli identyfikator jest nowy:    
     mtype - DISP2CLI_LOGIN_OK  
-    payload - potwierdzenie logowania  
+    payload - potwierdzenie logowania
+    Ustawia identyfikator klienta jako zajęty.  
 ```
+
+#### Pobieranie dostępnych powiadomień
+Klient
+```
+Wysyła żądanie o otrzymanie listy dostępnych powiadomień:
+mtype - CLI2DISP_FETCH 
+payload - identyfikator klienta
+```
+Dyspozytor
+```
+Odbiera identyfikator klienta i wysyła odpowiedź:
+mtype - DISP2CLI_AVAILABLE_TYPES
+payload[0] - identyfikator klienta
+payload[1] - lista typów powiadomień (wartośc 1 informuje o dostępności danego typu)
+```
+
+#### Przekazywanie powiadomień
+Klient
+```
+Wysyła informacje o subskrypcji typu powiadomienia:
+mtype - CLI2DISP_SUBSCRIBE 
+payload[0] - identyfikator klienta
+payload[1] - typ zasubskrybowane powiadomienia
+```
+Dyspozytor
+```
+Odbiera identyfikator klienta i jaki typ chce otrzymywać i wysyła odpowiedź:
+mtype - DISP2CLI_
+payload - ?
+```
+#### Wylogowanie
+Klient
+```
+Wysyła :
+mtype - CLI2DISP_LOGOUT 
+payload - identyfikator klienta
+```
+Dyspozytor
+```
+Odbiera identyfikator klienta:
+Ustawia idnetyfikator klienta jako wolny.
+```
+#### Rezygnacja z subskrypcji
+Klient
+```
+Wysyła :
+mtype - CLI2DISP_UNSUBSCRIBE 
+payload[0] - identyfikator klienta
+payload[1] - typ powiadomienia, z którego chce zrezygnować
+```
+Dyspozytor
+```
+Odbiera identyfikator klienta:
+Usuwa sybskrypcje klienta dla wskazanego typu powiadomienia.
+```
+
 
 ### Kompilacja kodu
 ```
