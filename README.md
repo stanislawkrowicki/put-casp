@@ -23,12 +23,13 @@ Na ID adresata przeznaczone są tylko dwa bajty z powodu konieczności możliwo�
 ```
 
 ### Ograniczenia systemowe
-```
+
 Zalogowanych może być maksymalnie 30 klientów i 30 prodcentów.
-MAX_ID = 30
+**MAX_ID = 30**  <br>
 
 W systemie może być dostępnych maskymalnie 30 typów powiadomień.
-MAX_NOTIFICATION = 30
+**MAX_NOTIFICATION = 30**
+
 
 ### Wiadomości systemowe producenta 
 ```
