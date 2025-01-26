@@ -16,7 +16,7 @@ uint16_t CONNECTED_PRODUCERS[MAX_ID + 1]; // type of messages sent if producer c
 UINT16_MAX if connected but not subscribed yet */
 uint16_t *CLIENTS;
 
-int AVAILABLE_NOTIFICATIONS[MAX_NOTIFICATION + 1]; // 0 if type not available 1 if available
+int AVAILABLE_NOTIFICATIONS[MAX_TYPE + 1]; // 0 if type not available 1 if available
 
 void get_available_notifications(uint32_t *types, int *len)
 {
@@ -34,7 +34,28 @@ void get_available_notifications(uint32_t *types, int *len)
     *len = curr + 1;
 }
 
-void handle_producer_login(struct message_event msg, int producer_system_queue)
+void broadcast_new_type(unsigned int type, int client_system_queue)
+{
+    for (int i = 0; i <= MAX_ID; ++i)
+    {
+        if (CLIENTS[i] > 0)
+        {
+            message_type mtype = get_message_type(i, DISP2_CLI_NEW_TYPE);
+            struct message_event event;
+            event.mtype = mtype;
+            event.payload.number = type;
+
+#ifdef DEBUG
+            printf("Broadcasting type %d to client %d\n", type, i);
+#endif
+
+            if (msgsnd(client_system_queue, &event, sizeof(event.payload.number), 0) == -1)
+                perror("broadcast_new_type msgsnd error");
+        }
+    }
+}
+
+void handle_producer_login(struct message_event msg, int producer_system_queue, int client_system_queue)
 {
 #ifdef DEBUG
     printf("Got LOGIN event from producer\n");
@@ -82,10 +103,13 @@ void handle_producer_login(struct message_event msg, int producer_system_queue)
 #endif
     }
 
-    msgsnd(producer_system_queue, &response, sizeof(response.payload.number), 0);
+    if (msgsnd(producer_system_queue, &response, sizeof(response.payload.number), 0) == -1)
+        perror("producer login response msgsnd error");
+
+    broadcast_new_type(type, client_system_queue);
 }
 
-void handle_producer_system_message(struct message_event msg, int producer_system_queue)
+void handle_producer_system_message(struct message_event msg, int producer_system_queue, int client_system_queue)
 {
     uint16_t producer_id = get_id(msg.mtype);
     uint32_t mtype = get_type(msg.mtype);
@@ -93,7 +117,7 @@ void handle_producer_system_message(struct message_event msg, int producer_syste
     switch (mtype)
     {
     case PROD2DISP_LOGIN:
-        handle_producer_login(msg, producer_system_queue);
+        handle_producer_login(msg, producer_system_queue, client_system_queue);
         break;
     default:
         printf("Unknown system message type from ID: %d: %d", producer_id, mtype);
@@ -160,7 +184,7 @@ void handle_client_fetch(struct message_event msg, int client_system_queue)
     int client_id = msg.payload.number;
     fetch_response.mtype = get_message_type(client_id, DISP2CLI_AVAILABLE_TYPES);
 
-    for (size_t i = 0; i <= MAX_NOTIFICATION; i++)
+    for (size_t i = 0; i <= MAX_TYPE; i++)
     {
         fetch_response.payload.numbers[i] = AVAILABLE_NOTIFICATIONS[i];
     }
@@ -255,7 +279,7 @@ void wait_for_system_messages(int producer_system_queue, int client_system_queue
 #ifdef DEBUG
             printf("Received message on producer system queue!\n");
 #endif
-            handle_producer_system_message(msg, producer_system_queue);
+            handle_producer_system_message(msg, producer_system_queue, client_system_queue);
             received = 1;
         }
         else if (errno != ENOMSG)
@@ -358,7 +382,7 @@ int main()
         CLIENTS[i] = 0;
     }
 
-    for (int i = 0; i < MAX_NOTIFICATION; ++i)
+    for (int i = 0; i < MAX_TYPE; ++i)
     {
         AVAILABLE_NOTIFICATIONS[i] = 0;
     }

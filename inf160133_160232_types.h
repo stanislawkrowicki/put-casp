@@ -8,23 +8,20 @@
     Maximum producer/client ID
 */
 #define MAX_ID 30
-#define MAX_NOTIFICATION 30
+#define MAX_TYPE 30
 
 extern const uint16_t P_SYSTEM_QUEUE_ID;
 extern const uint16_t C_SYSTEM_QUEUE_ID;
 extern const uint16_t P_NOTIFICATION_QUEUE_ID;
 extern const uint16_t C_NOTIFICATION_QUEUE_ID;
 extern const int SUBSCRIPTIONS_SHM_KEY;
+extern const int AVAILABLE_TYPES_SHM_KEY;
+extern const int NOTIFICATION_TYPE_SHM_KEY;
 
 /*
     ID of the dispatcher for use with system_type
 */
 extern const uint16_t DISPATCHER_ID;
-
-/*
-    Maximum value for message type
-*/
-extern const uint32_t MAX_TYPE;
 
 /*
     Producer -> Dispatcher message types

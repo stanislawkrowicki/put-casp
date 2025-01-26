@@ -109,9 +109,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (G_producing_type < 1 || G_producing_type > MAX_NOTIFICATION)
+    if (G_producing_type < 1 || G_producing_type > MAX_TYPE)
     {
-        printf("Message type must be between 1 and %d.\n", MAX_NOTIFICATION);
+        printf("Message type must be between 1 and %d.\n", MAX_TYPE);
         return 1;
     }
 

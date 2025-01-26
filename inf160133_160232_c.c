@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/shm.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <errno.h>
@@ -15,7 +16,9 @@
 
 uint16_t G_client_id;
 int G_system_queue;
-int G_notification_type;
+int *G_notification_type;
+uint32_t *G_available_types;
+uint8_t G_listen = 0;
 
 uint16_t login(int client_id)
 {
@@ -67,6 +70,26 @@ uint16_t login(int client_id)
     }
 }
 
+void listen_to_new_types()
+{
+    struct message_event event;
+    message_type mtype = get_message_type(G_client_id, DISP2_CLI_NEW_TYPE);
+
+    while (1)
+    {
+        if (msgrcv(G_system_queue, &event, sizeof(event.payload), mtype, 0) != -1)
+        {
+            G_available_types[event.payload.number] = 1;
+            if (*G_notification_type == -1)
+                printf("Type %d is available\n", event.payload.number);
+            else
+                printf("Type %d just got registered. Unsubscribe from current type using "
+                       "Ctrl + \\ to subscribe to the new type.\n",
+                       event.payload.number);
+        }
+    }
+}
+
 void listen_to_notification(uint32_t notification_type)
 {
     int message_queue = msgget(C_NOTIFICATION_QUEUE_ID, 0600 | IPC_CREAT);
@@ -77,28 +100,28 @@ void listen_to_notification(uint32_t notification_type)
 
     printf("Use Ctrl + \\ to unsubscribe from notification\n");
 
-    while (1)
+    while (G_listen)
     {
         msgrcv(message_queue, &notification, sizeof(notification.payload), get_message_type(G_client_id, notification_type), 0);
         printf("%s\n", notification.payload.text);
     }
 }
 
-void notification_request(struct message_event fetch_response)
+void notification_request()
 {
     int t;
     scanf("%d", &t);
-    int available = fetch_response.payload.numbers[t] == 1;
+    int available = G_available_types[t] == 1;
 
-    while (t <= 0 || t > MAX_NOTIFICATION || !available)
+    while (t <= 0 || t > MAX_TYPE || !available)
     {
         printf("Incorrect type specified. Try again.\n");
         scanf("%d", &t);
 
-        available = fetch_response.payload.numbers[t] == 1;
+        available = G_available_types[t] == 1;
     }
 
-    G_notification_type = t;
+    *G_notification_type = t;
 
     // Notification request
     struct message_event sub_msg;
@@ -106,14 +129,15 @@ void notification_request(struct message_event fetch_response)
     sub_msg.mtype = get_message_type(DISPATCHER_ID, CLI2DISP_SUBSCRIBE);
 
     sub_msg.payload.numbers[0] = G_client_id;
-    sub_msg.payload.numbers[1] = G_notification_type;
+    sub_msg.payload.numbers[1] = *G_notification_type;
     if (msgsnd(G_system_queue, &sub_msg, sizeof(sub_msg.payload), 0) == -1)
     {
         perror("msgsnd error");
         exit(EXIT_FAILURE);
     }
 
-    listen_to_notification(G_notification_type);
+    G_listen = 1;
+    listen_to_notification(*G_notification_type);
 }
 
 void logout()
@@ -154,11 +178,12 @@ void fetch()
         msg_size = msgrcv(G_system_queue, &fetch_response, sizeof(fetch_response.payload), fetch_response_type, IPC_NOWAIT);
         if (msg_size != -1)
         {
-            for (int i = 0; i <= MAX_NOTIFICATION; i++)
+            for (int i = 0; i <= MAX_TYPE; i++)
             {
                 if (fetch_response.payload.numbers[i] == 1)
                 {
                     printf("Type %d is available\n", i);
+                    G_available_types[i] = 1;
                     has_notifications = 1;
                 }
             }
@@ -175,7 +200,8 @@ void fetch()
             perror("msgrcv error on producer system queue\n");
         }
     }
-    notification_request(fetch_response);
+
+    notification_request();
 }
 
 void unsubscribe()
@@ -183,7 +209,7 @@ void unsubscribe()
     struct message_event unsub;
     unsub.mtype = get_message_type(DISPATCHER_ID, CLI2DISP_UNSUBSCRIBE);
     unsub.payload.numbers[0] = G_client_id;
-    unsub.payload.numbers[1] = G_notification_type;
+    unsub.payload.numbers[1] = *G_notification_type;
     if (msgsnd(G_system_queue, &unsub, sizeof(unsub.payload), 0) == -1)
     {
         perror("unsubscribe msgsnd error");
@@ -191,6 +217,8 @@ void unsubscribe()
     else
     {
         printf("\nNotification unsubscribed\n");
+        G_listen = 0;
+        *G_notification_type = -1;
         fetch();
     }
 }
@@ -211,32 +239,68 @@ int main(int argc, char *argv[])
         scanf("%d", &client_id);
     }
 
+    int shmid = shmget(AVAILABLE_TYPES_SHM_KEY, sizeof(uint32_t) * (MAX_TYPE + 1), 0600 | IPC_CREAT);
+    G_available_types = (uint32_t *)shmat(shmid, NULL, 0);
+
+    if (G_available_types == (uint32_t *)-1)
+    {
+        perror("G_available_types shmat failed");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i <= MAX_TYPE; ++i)
+    {
+        G_available_types[i] = 0;
+    }
+
+    int mtshmid = shmget(NOTIFICATION_TYPE_SHM_KEY, sizeof(int), 0600 | IPC_CREAT);
+    G_notification_type = (int *)shmat(mtshmid, NULL, 0);
+
+    if (G_notification_type == (int *)-1)
+    {
+        perror("G_notification_type shmat failed");
+        exit(EXIT_FAILURE);
+    }
+
+    *G_notification_type = -1; // -1 means not set yet
+
     G_system_queue = msgget(C_SYSTEM_QUEUE_ID, 0600 | IPC_CREAT);
 
     G_client_id = login(client_id);
 
-    struct sigaction logout_sa;
-    memset(&logout_sa, 0, sizeof(logout_sa));
-    logout_sa.sa_handler = logout;
-    logout_sa.sa_flags = SA_NOMASK;
+    pid_t cpid = fork();
 
-    if (sigaction(SIGINT, &logout_sa, NULL) == -1)
+    if (cpid != 0)
     {
-        perror("logout sigaction");
+        struct sigaction logout_sa;
+        memset(&logout_sa, 0, sizeof(logout_sa));
+        logout_sa.sa_handler = logout;
+        logout_sa.sa_flags = SA_NOMASK;
+
+        if (sigaction(SIGINT, &logout_sa, NULL) == -1)
+        {
+            perror("logout sigaction");
+        }
+
+        struct sigaction unsubscribe_sa;
+        memset(&unsubscribe_sa, 0, sizeof(unsubscribe_sa));
+        unsubscribe_sa.sa_handler = unsubscribe;
+        unsubscribe_sa.sa_flags = SA_NOMASK;
+
+        if (sigaction(SIGQUIT, &unsubscribe_sa, NULL) == -1)
+        {
+            perror("unsubscribe sigaction");
+        }
+
+        printf("Use 'Ctrl + C' to logout\n");
+        fetch();
+    }
+    else
+    {
+        signal(SIGINT, SIG_IGN);
+        signal(SIGQUIT, SIG_IGN);
+        listen_to_new_types();
     }
 
-    struct sigaction unsubscribe_sa;
-    memset(&unsubscribe_sa, 0, sizeof(unsubscribe_sa));
-    unsubscribe_sa.sa_handler = unsubscribe;
-    unsubscribe_sa.sa_flags = SA_NOMASK;
-
-    if (sigaction(SIGQUIT, &unsubscribe_sa, NULL) == -1)
-    {
-        perror("unsubscribe sigaction");
-    }
-
-    printf("Use 'Ctrl + C' to logout\n");
-
-    fetch();
     return 0;
 }
