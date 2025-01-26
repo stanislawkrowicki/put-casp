@@ -21,6 +21,15 @@ Na ID adresata przeznaczone są tylko dwa bajty z powodu konieczności możliwo�
     } payload;
 };
 ```
+
+### Ograniczenia systemowe
+```
+Zalogowanych może być maksymalnie 30 klientów i 30 prodcentów.
+MAX_ID = 30
+
+W systemie może być dostępnych maskymalnie 30 typów powiadomień.
+MAX_NOTIFICATION = 30
+
 ### Wiadomości systemowe producenta 
 ```
 LOGIN(ID, TYPE) - loguje się do dyspozytora podając swoje ID i typ powiadomień które będzie wysyłał.
@@ -131,7 +140,28 @@ Dyspozytor
 Odbiera identyfikator klienta:
 Usuwa sybskrypcje klienta dla wskazanego typu powiadomienia.
 ```
+### Scenariusza komunikacji między producentem a dyspozytorem
 
+#### Logowanie
+Producent
+```
+Wysyła prośbę o logowanie:
+mtype - PROD2DISP_LOGIN 
+payload[0] - identyfikator producenta
+payload[1] - typ produkowane przez producenta powiadomienia
+```
+Dyspozytor
+```
+Odbiera identyfikator klienta i wysyła odpowiedź:
+- Jeśli identyfikator już istnieje:
+    mtype - DISP2PROD_LOGIN_FAILED  
+    payload - komunikat o błędzie (np. "ID zajęte")  
+
+- Jeśli identyfikator jest nowy:    
+    mtype - DISP2PROD_LOGIN_OK  
+    payload - potwierdzenie logowania
+    Ustawia identyfikator klienta jako zajęty.  
+```
 
 ### Kompilacja kodu
 ```
